@@ -1,3 +1,10 @@
+> **Fork notice:** this is an aarch64-only fork of
+> [hassio-addons/app-tailscale](https://github.com/hassio-addons/app-tailscale),
+> maintained to keep the bundled Tailscale binary current via a scheduled
+> GitHub Actions job (`.github/workflows/version-bump.yaml`) instead of
+> trailing upstream. See that repo for the original project, docs, and
+> support channels.
+
 # Home Assistant Community App: Tailscale
 
 [![GitHub Release][releases-shield]][releases]
