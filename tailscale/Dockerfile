@@ -5,9 +5,11 @@ FROM ${BUILD_FROM}
 # Set shell
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# Setup base
-ARG BUILD_ARCH=aarch64
-ARG TAILSCALE_VERSION="v1.102.4"
+# Setup base packages. Kept in its own layer, deliberately not combined with
+# the Tailscale binary download below: this layer only changes when the apk
+# package list changes, so it stays cached across the daily version-bump
+# commits that only touch TAILSCALE_VERSION, instead of reinstalling every
+# package from scratch on every update.
 RUN \
     apk add --no-cache \
         bind-tools=9.20.26-r0 \
@@ -24,12 +26,17 @@ RUN \
     && ln -sf /sbin/xtables-nft-multi /sbin/iptables \
     \
     && rm -f -r \
-        /usr/lib/NetworkManager/dispatcher.d \
-    \
-    && if [ "${BUILD_ARCH}" = "aarch64" ]; then ARCH="arm64"; fi \
+        /usr/lib/NetworkManager/dispatcher.d
+
+# Fetch the Tailscale binary. Separate layer from the packages above, so a
+# version bump only re-downloads the binary, not the whole apk install.
+ARG BUILD_ARCH=aarch64
+ARG TAILSCALE_VERSION="v1.102.4"
+RUN \
+    if [ "${BUILD_ARCH}" = "aarch64" ]; then ARCH="arm64"; fi \
     && if [ "${BUILD_ARCH}" = "amd64" ]; then ARCH="amd64"; fi \
     \
-    && curl -L -s \
+    && curl -L -s --fail --retry 3 --retry-delay 5 --retry-connrefused \
         "https://pkgs.tailscale.com/stable/tailscale_${TAILSCALE_VERSION#v}_${ARCH}.tgz" \
         | tar zxvf - -C /opt/ --strip-components 1 \
     \

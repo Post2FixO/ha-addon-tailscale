@@ -1,0 +1,65 @@
+#!/command/with-contenv bashio
+# shellcheck shell=bash
+export LOG_FD
+# ==============================================================================
+# Post2Fix fork addition: share the machine shop over the tailnet
+#
+# Deliberately a oneshot, not a copy of share-homeassistant's long-running
+# foreground pattern: this registers a persistent (--bg) Serve/Funnel mapping
+# and exits. Every failure path below logs a warning and exits 0, on purpose,
+# a bad or stale mapping for this add-on must never be able to take down the
+# whole container (and with it, the only tailnet path to this device).
+#
+# Single fixed target for now (the 3D-printing print-manager container, at
+# 127.0.0.1:5000). If/when more machine-shop devices need their own container
+# and port, this is the place to generalize into a list of {local_port,
+# public_port} pairs instead of one fixed LOCAL_TARGET/port.
+# ==============================================================================
+
+declare -r LOCAL_TARGET="http://127.0.0.1:5000"
+declare port
+declare mode
+
+mode="$(bashio::config 'share_machine_shop')"
+port="$(bashio::config 'machine_shop_port')"
+
+# Always clear any existing mapping on this port first. Registering a new
+# mapping over an old one is fine, but this also handles the disabled case
+# and an invalid config value the same way: leave nothing stale behind.
+/opt/tailscale serve --https="${port}" off > /dev/null 2>&1 || true
+
+if bashio::config.equals 'share_machine_shop' 'disabled'; then
+  bashio::log.info "Machine shop sharing is disabled, nothing to do"
+  exit 0
+fi
+
+if ! bashio::config.equals 'share_machine_shop' 'serve' && \
+  ! bashio::config.equals 'share_machine_shop' 'funnel'
+then
+  bashio::log.warning "Invalid value '${mode}' for share_machine_shop, must be 'disabled', 'serve' or 'funnel', treating as disabled"
+  exit 0
+fi
+
+# Check if Tailscale HTTPS is enabled for this tailnet
+if ! /opt/tailscale status --self=true --peers=false --json \
+  | jq -rce '.Self.CapMap | has("https")' > /dev/null;
+then
+  bashio::log.warning "Tailscale's HTTPS support is disabled for this tailnet, can't share the machine shop"
+  exit 0
+fi
+
+if bashio::config.equals 'share_machine_shop' 'funnel'; then
+  if ! /opt/tailscale status --self=true --peers=false --json \
+    | jq -rce '.Self.CapMap | has("funnel")' > /dev/null;
+  then
+    bashio::log.warning "Tailscale's Funnel support is disabled for this tailnet, can't funnel the machine shop"
+    exit 0
+  fi
+fi
+
+bashio::log.info "Sharing machine shop (${LOCAL_TARGET}) on port ${port} via ${mode}"
+if ! /opt/tailscale "${mode}" --bg --https="${port}" --set-path=/ "${LOCAL_TARGET}"; then
+  bashio::log.warning "Unable to set up Tailscale ${mode} for the machine shop, continuing without it"
+fi
+
+exit 0

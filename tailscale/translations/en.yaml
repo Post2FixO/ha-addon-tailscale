@@ -74,6 +74,20 @@ configuration:
       internet.
       Only ports 443, 8443, and 10000 are allowed by Tailscale.
       Port 443 is used by default.
+  share_machine_shop:
+    name: Share machine shop with Serve or Funnel
+    description: >-
+      This option allows you to enable Tailscale Serve or Funnel features to present
+      a machine shop container running on this same host (currently the 3D-printing
+      print-manager, at 127.0.0.1:5000) with a valid certificate on your tailnet or
+      on the internet. This option is disabled by default.
+  machine_shop_port:
+    name: Machine shop share port
+    description: >-
+      This option lets you specify which port the Tailscale Serve and Funnel features
+      will use to present the machine shop container on the tailnet and on the
+      internet. Only ports 443, 8443, and 10000 are allowed by Tailscale.
+      Port 10000 is used by default.
   snat_subnet_routes:
     name: Source NAT subnet routes
     description: >-
