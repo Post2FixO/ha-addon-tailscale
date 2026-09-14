@@ -10,17 +10,22 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # package list changes, so it stays cached across the daily version-bump
 # commits that only touch TAILSCALE_VERSION, instead of reinstalling every
 # package from scratch on every update.
+# Deliberately unpinned (not the usual hassio-addons convention): exact apk
+# version pins go stale on Alpine's own repo rotation schedule, independent
+# of anything in this repo, and have already broken a build once. Accepting
+# "whatever apk add pulls today" instead, low risk for these packages.
+# hadolint ignore=DL3018
 RUN \
     apk add --no-cache \
-        bind-tools=9.20.27-r0 \
-        dnsmasq=2.92_p2-r0 \
-        ethtool=7.0-r0 \
-        ipcalc=1.0.3-r1 \
-        iproute2=7.0.0-r0 \
-        iptables=1.8.13-r0 \
-        nginx=1.30.4-r1 \
-        coreutils=9.11-r0 \
-        networkmanager=1.52.2-r0 \
+        bind-tools \
+        dnsmasq \
+        ethtool \
+        ipcalc \
+        iproute2 \
+        iptables \
+        nginx \
+        coreutils \
+        networkmanager \
     \
     && ln -sf /sbin/xtables-nft-multi /sbin/ip6tables \
     && ln -sf /sbin/xtables-nft-multi /sbin/iptables \
