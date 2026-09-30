@@ -36,7 +36,7 @@ RUN \
 # Fetch the Tailscale binary. Separate layer from the packages above, so a
 # version bump only re-downloads the binary, not the whole apk install.
 ARG BUILD_ARCH=aarch64
-ARG TAILSCALE_VERSION="v1.102.4"
+ARG TAILSCALE_VERSION="v1.102.5"
 RUN \
     if [ "${BUILD_ARCH}" = "aarch64" ]; then ARCH="arm64"; fi \
     && if [ "${BUILD_ARCH}" = "amd64" ]; then ARCH="amd64"; fi \
